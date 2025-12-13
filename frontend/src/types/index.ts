@@ -7,6 +7,7 @@ export interface Volunteer {
   phone?: string;
   photo_url?: string;
   bio?: string;
+  admin_notes?: string;
   skills: string[];
   interests: string[];
   availability_weekdays: string[];
@@ -71,28 +72,34 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  estimated_minutes: number;
-  assigned_to: string;
+  estimated_minutes?: number;
+  assigned_to?: string;
+  due_at?: string;
+  priority?: 'low' | 'medium' | 'high';
   status: 'pending' | 'completed' | 'cancelled';
   proof_photo_url?: string;
   completed_at?: string;
   created_at: string;
   updated_at: string;
-  created_by: string;
+  created_by?: string;
 }
 
 export interface Message {
   id: string;
-  from_admin: string;
+  from_admin?: string;
+  title?: string;
+  body?: string;
   to_volunteer_id?: string;
   broadcast_filter?: Record<string, any>;
+  sent_to_all?: boolean;
   subject?: string;
-  content: string;
-  message_type: 'manual' | 'template' | 'auto';
+  content?: string;
+  message_type?: 'manual' | 'template' | 'auto';
   template_key?: string;
   delivered_at?: string;
   read_at?: string;
   created_at: string;
+  created_by?: string;
 }
 
 export interface Badge {

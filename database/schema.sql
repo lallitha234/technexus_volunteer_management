@@ -13,6 +13,7 @@ CREATE TABLE volunteers (
   phone VARCHAR(20),
   photo_url TEXT,
   bio TEXT,
+  admin_notes TEXT,
   skills TEXT[] DEFAULT '{}',
   interests TEXT[] DEFAULT '{}',
   availability_weekdays TEXT[] DEFAULT '{}', -- ["Monday", "Tuesday", ...]

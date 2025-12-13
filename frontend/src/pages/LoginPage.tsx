@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { signIn, getCurrentUser } from '../services/supabase.js';
 import { Mail, Lock, AlertCircle, Loader } from 'lucide-react';
+import logo from '../assets/logo.svg';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -60,8 +61,8 @@ export const LoginPage: React.FC = () => {
         <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-2xl shadow-2xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full mb-4">
-              <span className="text-3xl">🎪</span>
+            <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+              <img src={logo} alt="Technexus" className="w-full h-full" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Technexus</h1>
             <p className="text-slate-400">Admin Volunteer Management</p>

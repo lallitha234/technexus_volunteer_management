@@ -9,7 +9,12 @@ import { Sidebar } from './components/Sidebar.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { DashboardPage } from './pages/DashboardPage.js';
 import { VolunteersPage } from './pages/VolunteersPage.js';
+import { NewVolunteerPage } from './pages/NewVolunteerPage.js';
+import { EditVolunteerPage } from './pages/EditVolunteerPage.js';
 import { EventsPage } from './pages/EventsPage.js';
+import { NewEventPage } from './pages/NewEventPage.js';
+import { TasksPage } from './pages/TasksPage.js';
+import { MessagesPage } from './pages/MessagesPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 import { NotFoundPage } from './pages/NotFoundPage.js';
 import { Loader } from 'lucide-react';
@@ -111,6 +116,22 @@ export const App: React.FC = () => {
           }
         />
         <Route
+          path="/volunteers/new"
+          element={
+            <ProtectedRoute>
+              <NewVolunteerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/volunteers/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditVolunteerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/events"
           element={
             <ProtectedRoute>
@@ -119,23 +140,18 @@ export const App: React.FC = () => {
           }
         />
         <Route
-          path="/settings"
+          path="/events/new"
           element={
             <ProtectedRoute>
-              <SettingsPage />
+              <NewEventPage />
             </ProtectedRoute>
           }
         />
-
-        {/* Placeholder routes for future implementation */}
         <Route
           path="/tasks"
           element={
             <ProtectedRoute>
-              <div className="card p-12 text-center">
-                <p className="text-4xl mb-4">⚡</p>
-                <h3 className="text-xl font-bold text-white mb-2">Tasks - Coming Soon</h3>
-              </div>
+              <TasksPage />
             </ProtectedRoute>
           }
         />
@@ -143,10 +159,15 @@ export const App: React.FC = () => {
           path="/messages"
           element={
             <ProtectedRoute>
-              <div className="card p-12 text-center">
-                <p className="text-4xl mb-4">💬</p>
-                <h3 className="text-xl font-bold text-white mb-2">Messages - Coming Soon</h3>
-              </div>
+              <MessagesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

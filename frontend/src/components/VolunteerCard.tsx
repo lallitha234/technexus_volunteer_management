@@ -5,7 +5,7 @@ import { Edit2, Trash2, Star } from 'lucide-react';
 interface VolunteerCardProps {
   volunteer: Volunteer;
   onEdit?: (volunteer: Volunteer) => void;
-  onDelete?: (id: string) => void;
+  onDelete?: (volunteer: Volunteer) => void;
   onBadge?: (id: string) => void;
 }
 
@@ -97,7 +97,7 @@ export const VolunteerCard: React.FC<VolunteerCardProps> = ({
         )}
         {onDelete && (
           <button
-            onClick={() => onDelete(volunteer.id)}
+            onClick={() => onDelete(volunteer)}
             className="flex-1 flex items-center justify-center gap-1 px-2 py-2 text-xs rounded bg-red-500/20 text-red-200 hover:bg-red-500/30 transition-colors"
           >
             <Trash2 className="w-3 h-3" />

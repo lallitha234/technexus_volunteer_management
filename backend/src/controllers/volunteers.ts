@@ -74,29 +74,58 @@ export const getVolunteer = async (req: Request, res: Response): Promise<void> =
 export const createVolunteer = async (req: Request, res: Response): Promise<void> => {
   try {
     const supabase = getSupabase();
-    const { full_name, email, phone, pronouns, skills = [], interests = [], consent_contact = true, consent_photo = false } = req.body;
+    const {
+      full_name,
+      display_name,
+      email,
+      phone,
+      pronouns,
+      bio,
+      admin_notes,
+      status = 'active',
+      skills = [],
+      interests = [],
+      availability_weekdays = [],
+      availability_time_slots = [],
+      consent_contact = true,
+      consent_photo = false,
+    } = req.body;
 
-    if (!full_name || !email) {
-      res.status(400).json({ error: 'Missing required fields: full_name, email' });
+    // Validate required fields
+    if (!full_name || !full_name.trim()) {
+      res.status(400).json({ error: 'Full name is required', field: 'full_name' });
+      return;
+    }
+
+    if (!email || !email.trim()) {
+      res.status(400).json({ error: 'Email is required', field: 'email' });
+      return;
+    }
+
+    if (!email.includes('@')) {
+      res.status(400).json({ error: 'Invalid email format', field: 'email' });
       return;
     }
 
     const volunteer: Volunteer = {
       id: randomUUID(),
-      full_name,
-      email,
-      phone: phone || '',
-      pronouns: pronouns || '',
-      skills: skills || [],
-      interests: interests || [],
-      availability_weekdays: [],
-      availability_time_slots: [],
-      consent_contact,
-      consent_photo,
+      full_name: full_name.trim(),
+      display_name: display_name?.trim() || full_name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone?.trim() || null,
+      pronouns: pronouns?.trim() || null,
+      bio: bio?.trim() || null,
+      admin_notes: admin_notes?.trim() || null,
+      skills: Array.isArray(skills) ? skills : [],
+      interests: Array.isArray(interests) ? interests : [],
+      availability_weekdays: Array.isArray(availability_weekdays) ? availability_weekdays : [],
+      availability_time_slots: Array.isArray(availability_time_slots) ? availability_time_slots : [],
+      consent_contact: Boolean(consent_contact),
+      consent_photo: Boolean(consent_photo),
+      status: ['active', 'inactive', 'archived'].includes(status) ? status : 'active',
       total_hours: 0,
       total_events: 0,
       no_show_count: 0,
-      status: 'active',
       created_at: new Date(),
       updated_at: new Date(),
     };
@@ -106,7 +135,49 @@ export const createVolunteer = async (req: Request, res: Response): Promise<void
       .insert([volunteer])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error:', {
+        code: error.code,
+        message: error.message,
+        hint: error.hint,
+        details: error.details,
+      });
+      
+      // Handle specific database errors
+      if (error.code === '23505') {
+        // Unique violation (email already exists)
+        res.status(409).json({ error: 'Email already exists', field: 'email', code: error.code });
+        return;
+      }
+
+      if (error.code === '42P01') {
+        // Table doesn't exist
+        res.status(500).json({ 
+          error: 'Database table not found. Please run migrations.', 
+          code: error.code,
+          details: error.message 
+        });
+        return;
+      }
+
+      if (error.code === '42703') {
+        // Column doesn't exist
+        res.status(500).json({ 
+          error: 'Database column not found. Please update schema.', 
+          code: error.code,
+          details: error.message,
+          hint: error.hint
+        });
+        return;
+      }
+
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      res.status(500).json({ error: 'Failed to create volunteer - no data returned' });
+      return;
+    }
 
     // Log audit
     if (req.user) {
@@ -115,7 +186,12 @@ export const createVolunteer = async (req: Request, res: Response): Promise<void
 
     res.status(201).json(data[0]);
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    console.error('Create volunteer error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: `Failed to create volunteer: ${message}`,
+      details: process.env.NODE_ENV === 'development' ? message : undefined
+    });
   }
 };
 

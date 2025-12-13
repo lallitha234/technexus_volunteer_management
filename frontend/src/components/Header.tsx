@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuthStore } from '../store/authStore.js';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Menu } from 'lucide-react';
+import logo from '../assets/logo.svg';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -19,7 +20,9 @@ export const Header: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="text-3xl">🎪</div>
+            <div className="w-10 h-10">
+              <img src={logo} alt="Technexus" className="w-full h-full" />
+            </div>
             <div>
               <h1 className="text-xl font-bold text-white">Technexus</h1>
               <p className="text-xs text-slate-400">Volunteer Central</p>

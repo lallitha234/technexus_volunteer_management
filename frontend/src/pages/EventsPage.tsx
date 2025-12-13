@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { eventsApi } from '../services/api.js';
 import { Event } from '../types/index.js';
-import { Calendar, MapPin, Users, Plus } from 'lucide-react';
+import { Calendar, MapPin, Users, Plus, Edit2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const EventsPage: React.FC = () => {
@@ -45,6 +45,16 @@ export const EventsPage: React.FC = () => {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this event?')) return;
+    try {
+      await eventsApi.delete(id);
+      fetchEvents();
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -69,17 +79,25 @@ export const EventsPage: React.FC = () => {
       </div>
 
       {/* Status filter */}
-      <div className="card p-4">
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="input-field"
-        >
-          <option value="draft">📝 Draft</option>
-          <option value="published">🟢 Published</option>
-          <option value="cancelled">⛔ Cancelled</option>
-          <option value="completed">✅ Completed</option>
-        </select>
+      <div className="card p-4 flex gap-2 flex-wrap">
+        {[
+          { label: '📝 Draft', value: 'draft' },
+          { label: '🟢 Published', value: 'published' },
+          { label: '⛔ Cancelled', value: 'cancelled' },
+          { label: '✅ Completed', value: 'completed' },
+        ].map((option) => (
+          <button
+            key={option.value}
+            onClick={() => setStatus(option.value)}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              status === option.value
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       {/* Events list */}
@@ -92,15 +110,15 @@ export const EventsPage: React.FC = () => {
       ) : events.length > 0 ? (
         <div className="space-y-4">
           {events.map((event) => (
-            <div key={event.id} className="card p-6 hover:shadow-lg transition-shadow">
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-                <div className="flex-1">
+            <div key={event.id} className="card p-6 hover:shadow-lg transition-shadow border-l-4 border-pink-500">
+              <div className="flex flex-col gap-4">
+                <div>
                   <h3 className="text-lg font-bold text-white mb-2">{event.title}</h3>
                   {event.description && (
                     <p className="text-sm text-slate-400 mb-3 line-clamp-2">{event.description}</p>
                   )}
 
-                  <div className="flex flex-wrap gap-4 text-sm text-slate-300">
+                  <div className="flex flex-wrap gap-4 text-sm text-slate-300 mb-3">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       {formatDate(event.start_at)}
@@ -118,31 +136,71 @@ export const EventsPage: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Tags */}
+                  {event.tags && event.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {event.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="text-xs px-2 py-1 bg-blue-500/20 text-blue-200 rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div className="flex gap-2 w-full flex-wrap">
                   {event.status === 'draft' && (
-                    <button
-                      onClick={() => handlePublish(event.id)}
-                      className="flex-1 sm:flex-none btn-primary text-xs sm:text-sm"
-                    >
-                      Publish
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handlePublish(event.id)}
+                        className="btn-primary text-xs sm:text-sm"
+                      >
+                        Publish
+                      </button>
+                      <button
+                        onClick={() => navigate(`/events/${event.id}/edit`)}
+                        className="btn-secondary text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Edit
+                      </button>
+                    </>
                   )}
                   {event.status === 'published' && (
+                    <>
+                      <button
+                        onClick={() => handleCancel(event.id)}
+                        className="px-3 py-2 bg-red-500/20 text-red-200 hover:bg-red-500/30 rounded text-xs sm:text-sm"
+                      >
+                        Cancel Event
+                      </button>
+                      <button
+                        onClick={() => navigate(`/events/${event.id}/shifts`)}
+                        className="btn-secondary text-xs sm:text-sm"
+                      >
+                        Manage Shifts
+                      </button>
+                    </>
+                  )}
+                  {event.status !== 'published' && event.status !== 'draft' && (
                     <button
-                      onClick={() => handleCancel(event.id)}
-                      className="flex-1 sm:flex-none px-3 py-2 bg-red-500/20 text-red-200 hover:bg-red-500/30 rounded text-xs sm:text-sm"
+                      onClick={() => handleDelete(event.id)}
+                      className="px-3 py-2 bg-red-500/20 text-red-200 hover:bg-red-500/30 rounded text-xs sm:text-sm flex items-center gap-1"
                     >
-                      Cancel
+                      <Trash2 className="w-4 h-4" />
+                      Delete
                     </button>
                   )}
                   <button
                     onClick={() => navigate(`/events/${event.id}`)}
-                    className="flex-1 sm:flex-none btn-secondary text-xs sm:text-sm"
+                    className="btn-secondary text-xs sm:text-sm ml-auto"
                   >
-                    View
+                    View Details
                   </button>
                 </div>
               </div>
@@ -153,7 +211,11 @@ export const EventsPage: React.FC = () => {
         <div className="card p-12 text-center">
           <p className="text-4xl mb-4">📅</p>
           <h3 className="text-xl font-bold text-white mb-2">No events found</h3>
-          <p className="text-slate-400">Create your first event to get started</p>
+          <p className="text-slate-400 mb-6">
+            {status === 'draft'
+              ? 'Create your first event to get started'
+              : 'No events with this status'}
+          </p>
         </div>
       )}
     </div>

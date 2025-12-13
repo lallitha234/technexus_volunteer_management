@@ -40,13 +40,18 @@ app.use(express.json());
 // Request logger middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log(`[${new Date().toISOString()}] ${req.method.padEnd(6)} ${req.path}`);
   next();
 });
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Test endpoint to verify routing
+app.get('/api/test', (req: Request, res: Response) => {
+  res.json({ message: 'API is working', timestamp: new Date().toISOString() });
 });
 
 // API Routes

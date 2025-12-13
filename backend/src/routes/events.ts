@@ -13,6 +13,7 @@ router.get('/', eventsController.listEvents);
 router.get('/:id', eventsController.getEvent);
 router.patch('/:id', eventsController.updateEvent);
 router.post('/:id/publish', eventsController.publishEvent);
+router.post('/:id/complete', eventsController.completeEvent);
 router.post('/:id/cancel', eventsController.cancelEvent);
 
 // Shift routes

@@ -8,6 +8,7 @@ export interface Volunteer {
   phone?: string;
   photo_url?: string;
   bio?: string;
+  admin_notes?: string;
   skills: string[];
   interests: string[];
   availability_weekdays: string[];

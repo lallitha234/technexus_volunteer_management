@@ -64,6 +64,7 @@ export const eventsApi = {
   create: (data: any) => apiCall('POST', '/events', { data }),
   update: (id: string, data: any) => apiCall('PATCH', `/events/${id}`, { data }),
   publish: (id: string) => apiCall('POST', `/events/${id}/publish`),
+  complete: (id: string) => apiCall('POST', `/events/${id}/complete`),
   cancel: (id: string) => apiCall('POST', `/events/${id}/cancel`),
   getShifts: (eventId: string) => apiCall('GET', `/events/${eventId}/shifts`),
   createShift: (data: any) => apiCall('POST', '/events/create-shift', { data }),
@@ -78,6 +79,8 @@ export const tasksApi = {
   list: (filters?: { status?: string; assigned_to?: string }) =>
     apiCall('GET', `/tasks?${new URLSearchParams(filters || {}).toString()}`),
   create: (data: any) => apiCall('POST', '/tasks', { data }),
+  updateStatus: (id: string, status: string) =>
+    apiCall('PATCH', `/tasks/${id}/status`, { data: { status } }),
   complete: (id: string, data?: any) => apiCall('PATCH', `/tasks/${id}/complete`, { data }),
 };
 

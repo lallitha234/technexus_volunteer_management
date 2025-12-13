@@ -166,7 +166,7 @@ export const publishEvent = async (req: Request, res: Response): Promise<void> =
 };
 
 /**
- * DELETE /events/:id - Cancel event
+ * POST /events/:id/cancel - Cancel event
  */
 export const cancelEvent = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -188,6 +188,36 @@ export const cancelEvent = async (req: Request, res: Response): Promise<void> =>
 
     if (req.user) {
       await logAudit(req.user.id, 'CANCEL_EVENT', 'events', id, {}, { status: 'cancelled' }, req.ip);
+    }
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+/**
+ * POST /events/:id/complete - Complete event
+ */
+export const completeEvent = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const supabase = getSupabase();
+
+    const { data, error } = await supabase
+      .from('events')
+      .update({
+        status: 'completed',
+        updated_at: new Date(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (req.user) {
+      await logAudit(req.user.id, 'COMPLETE_EVENT', 'events', id, {}, { status: 'completed' }, req.ip);
     }
 
     res.json(data);

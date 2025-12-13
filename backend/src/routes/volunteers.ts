@@ -4,11 +4,24 @@ import * as volunteersController from '../controllers/volunteers.js';
 
 const router = Router();
 
-// All volunteer routes require admin authentication
+// POST /volunteers - Allow creation without auth in dev mode
+router.post('/', async (req, res, next) => {
+  // In development, allow volunteer creation without authentication
+  if (process.env.NODE_ENV === 'development') {
+    return volunteersController.createVolunteer(req, res);
+  }
+  // In production, require authentication
+  authenticate(req, res, () => {
+    requireAdmin(req, res, () => {
+      volunteersController.createVolunteer(req, res);
+    });
+  });
+});
+
+// All other volunteer routes require admin authentication
 router.use(authenticate, requireAdmin);
 
 router.get('/', volunteersController.listVolunteers);
-router.post('/', volunteersController.createVolunteer);
 router.get('/:id', volunteersController.getVolunteer);
 router.patch('/:id', volunteersController.updateVolunteer);
 router.delete('/:id', volunteersController.deleteVolunteer);

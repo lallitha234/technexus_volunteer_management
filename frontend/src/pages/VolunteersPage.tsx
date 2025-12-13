@@ -3,6 +3,7 @@ import { volunteersApi } from '../services/api.js';
 import { Volunteer } from '../types/index.js';
 import { VolunteerCard } from '../components/VolunteerCard.js';
 import { Pagination } from '../components/Pagination.js';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal.js';
 import { Search, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,6 +14,17 @@ export const VolunteersPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('active');
   const [page, setPage] = useState(1);
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    volunteerId: string;
+    volunteerName: string;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    volunteerId: '',
+    volunteerName: '',
+    isDeleting: false,
+  });
   const pageSize = 12;
 
   const fetchVolunteers = async () => {
@@ -35,15 +47,29 @@ export const VolunteersPage: React.FC = () => {
     fetchVolunteers();
   }, [status, search]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this volunteer?')) return;
+  const handleDeleteClick = (volunteer: Volunteer) => {
+    setDeleteModal({
+      isOpen: true,
+      volunteerId: volunteer.id,
+      volunteerName: volunteer.full_name,
+      isDeleting: false,
+    });
+  };
 
+  const handleConfirmDelete = async () => {
+    setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
     try {
-      await volunteersApi.delete(id);
-      setVolunteers(volunteers.filter((v) => v.id !== id));
+      await volunteersApi.delete(deleteModal.volunteerId);
+      setVolunteers(volunteers.filter((v) => v.id !== deleteModal.volunteerId));
+      setDeleteModal({ isOpen: false, volunteerId: '', volunteerName: '', isDeleting: false });
     } catch (error) {
       console.error('Failed to delete volunteer:', error);
+      setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModal({ isOpen: false, volunteerId: '', volunteerName: '', isDeleting: false });
   };
 
   const paginatedVolunteers = volunteers.slice(
@@ -53,6 +79,17 @@ export const VolunteersPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title="Delete Volunteer"
+        message="Are you sure you want to delete this volunteer? They will be archived and their records will be preserved."
+        itemName={deleteModal.volunteerName}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        isLoading={deleteModal.isDeleting}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -112,7 +149,7 @@ export const VolunteersPage: React.FC = () => {
                 key={volunteer.id}
                 volunteer={volunteer}
                 onEdit={(v) => navigate(`/volunteers/${v.id}/edit`)}
-                onDelete={handleDelete}
+                onDelete={handleDeleteClick}
                 onBadge={(id) => navigate(`/volunteers/${id}/badge`)}
               />
             ))}
@@ -136,3 +173,5 @@ export const VolunteersPage: React.FC = () => {
     </div>
   );
 };
+
+export default VolunteersPage;

@@ -16,6 +16,21 @@ declare global {
  * Middleware to verify JWT token and authenticate user
  */
 export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+  console.log(`[AUTH] Processing ${req.method} ${req.path}`);
+  
+  // Development mode fallback (when no Supabase JWT secret is configured)
+  if (process.env.NODE_ENV === 'development' && !process.env.SUPABASE_JWT_SECRET) {
+    console.warn('⚠️  Development mode: Using default admin user');
+    req.user = {
+      id: 'dev-admin-' + Date.now(),
+      email: 'admin@dev.local',
+      role: 'admin',
+      aud: 'authenticated',
+    };
+    next();
+    return;
+  }
+
   try {
     const authHeader = req.headers.authorization;
     const token = extractToken(authHeader);
@@ -24,6 +39,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
     req.user = user;
     next();
   } catch (error) {
+    console.error(`[AUTH] Error for ${req.method} ${req.path}:`, error instanceof Error ? error.message : error);
     res.status(401).json({
       error: 'Unauthorized',
       message: error instanceof Error ? error.message : 'Authentication failed',

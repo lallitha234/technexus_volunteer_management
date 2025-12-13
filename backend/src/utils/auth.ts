@@ -7,9 +7,27 @@ import { AuthUser } from '../types/index.js';
  */
 export const verifySupabaseToken = (token: string): AuthUser => {
   try {
-    // Supabase tokens are verified with the public key
-    // For simplicity, we're using the SUPABASE_JWT_SECRET (internal use only)
-    const jwtSecret = process.env.SUPABASE_JWT_SECRET || 'your-secret-key';
+    // Try to get JWT secret from environment
+    let jwtSecret = process.env.SUPABASE_JWT_SECRET;
+    
+    // If not available, try to extract from token without verification (for development)
+    if (!jwtSecret) {
+      console.warn('⚠️  SUPABASE_JWT_SECRET not set - attempting token extraction without verification');
+      try {
+        const decoded = jwt.decode(token) as AuthUser & { role: string; sub: string };
+        if (decoded) {
+          return {
+            id: decoded.sub || decoded.id,
+            email: decoded.email || '',
+            role: (decoded.role as 'admin' | 'volunteer') || 'volunteer',
+            aud: decoded.aud,
+          };
+        }
+      } catch (e) {
+        // Fall through to error
+      }
+      throw new Error('SUPABASE_JWT_SECRET not configured and token could not be decoded');
+    }
     
     const decoded = jwt.verify(token, jwtSecret, {
       algorithms: ['HS256'],
@@ -18,7 +36,7 @@ export const verifySupabaseToken = (token: string): AuthUser => {
     return {
       id: decoded.sub || decoded.id,
       email: decoded.email || '',
-      role: decoded.role as 'admin' | 'volunteer',
+      role: (decoded.role as 'admin' | 'volunteer') || 'volunteer',
       aud: decoded.aud,
     };
   } catch (error) {
