@@ -76,7 +76,7 @@ export interface Task {
   assigned_to?: string;
   due_at?: string;
   priority?: 'low' | 'medium' | 'high';
-  status: 'pending' | 'completed' | 'cancelled';
+  status: 'pending' | 'on_process' | 'completed' | 'cancelled';
   proof_photo_url?: string;
   completed_at?: string;
   created_at: string;

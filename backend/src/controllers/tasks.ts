@@ -6,7 +6,7 @@ import { Request, Response } from 'express';
  */
 export const createTask = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { title, description, estimated_minutes, assigned_to } = req.body;
+    const { title, description, estimated_minutes, assigned_to, priority = 'medium', due_at } = req.body;
     const supabase = getSupabase();
 
     if (!title || !estimated_minutes || !assigned_to) {
@@ -19,6 +19,8 @@ export const createTask = async (req: Request, res: Response): Promise<void> => 
       description: description || '',
       estimated_minutes,
       assigned_to,
+      priority: ['low', 'medium', 'high'].includes(priority) ? priority : 'medium',
+      due_at: due_at ? new Date(due_at) : null,
       status: 'pending',
       created_by: req.user?.id || '',
       created_at: new Date(),

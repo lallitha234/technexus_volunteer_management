@@ -225,3 +225,41 @@ export const completeEvent = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
+
+/**
+ * DELETE /events/:id - Delete event (hard delete)
+ */
+export const deleteEvent = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const supabase = getSupabase();
+
+    // First get the event details for audit logging
+    const { data: eventData } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!eventData) {
+      res.status(404).json({ error: 'Event not found' });
+      return;
+    }
+
+    // Delete the event
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    if (req.user) {
+      await logAudit(req.user.id, 'DELETE', 'events', id, eventData, {}, req.ip);
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};

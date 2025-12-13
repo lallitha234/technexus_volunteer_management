@@ -75,7 +75,9 @@ export interface Task {
   description?: string;
   estimated_minutes: number;
   assigned_to: string;
-  status: 'pending' | 'completed' | 'cancelled';
+  priority?: 'low' | 'medium' | 'high';
+  due_at?: Date;
+  status: 'pending' | 'on_process' | 'completed' | 'cancelled';
   proof_photo_url?: string;
   completed_at?: Date;
   created_at: Date;

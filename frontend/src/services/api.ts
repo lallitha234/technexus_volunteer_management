@@ -66,6 +66,7 @@ export const eventsApi = {
   publish: (id: string) => apiCall('POST', `/events/${id}/publish`),
   complete: (id: string) => apiCall('POST', `/events/${id}/complete`),
   cancel: (id: string) => apiCall('POST', `/events/${id}/cancel`),
+  delete: (id: string) => apiCall('DELETE', `/events/${id}`),
   getShifts: (eventId: string) => apiCall('GET', `/events/${eventId}/shifts`),
   createShift: (data: any) => apiCall('POST', '/events/create-shift', { data }),
   assignVolunteer: (shiftId: string, volunteerId: string) =>

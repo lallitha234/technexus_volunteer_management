@@ -8,7 +8,7 @@ export const TasksPage: React.FC = () => {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [status, setStatus] = useState<'pending' | 'completed'>('pending');
+  const [status, setStatus] = useState<'pending' | 'on_process' | 'completed'>('pending');
 
   useEffect(() => {
     fetchTasks();
@@ -78,6 +78,7 @@ export const TasksPage: React.FC = () => {
       <div className="card p-4 flex gap-2">
         {[
           { label: '📋 Pending', value: 'pending' as const },
+          { label: '⏳ In Progress', value: 'on_process' as const },
           { label: '✅ Completed', value: 'completed' as const },
         ].map((option) => (
           <button

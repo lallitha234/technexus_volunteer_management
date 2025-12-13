@@ -113,7 +113,9 @@ CREATE TABLE tasks (
   description TEXT,
   estimated_minutes INT NOT NULL,
   assigned_to UUID NOT NULL,
-  status VARCHAR(50) DEFAULT 'pending', -- pending, completed, cancelled
+  priority VARCHAR(20) DEFAULT 'medium', -- low, medium, high
+  due_at TIMESTAMP,
+  status VARCHAR(50) DEFAULT 'pending', -- pending, on_process, completed, cancelled
   proof_photo_url TEXT,
   completed_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
