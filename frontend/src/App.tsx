@@ -1,0 +1,159 @@
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/authStore.js';
+import { getCurrentUser, onAuthStateChange } from './services/supabase.js';
+import { Header } from './components/Header.js';
+import { Sidebar } from './components/Sidebar.js';
+
+// Pages
+import { LoginPage } from './pages/LoginPage.js';
+import { DashboardPage } from './pages/DashboardPage.js';
+import { VolunteersPage } from './pages/VolunteersPage.js';
+import { EventsPage } from './pages/EventsPage.js';
+import { SettingsPage } from './pages/SettingsPage.js';
+import { NotFoundPage } from './pages/NotFoundPage.js';
+import { Loader } from 'lucide-react';
+
+// Protected route wrapper
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { user, isLoading } = useAuthStore();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-12 h-12 animate-spin text-purple-400 mx-auto mb-4" />
+          <p className="text-slate-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <div className="flex">
+      <Sidebar />
+      <div className="flex-1">
+        <Header />
+        <main className="p-4 sm:p-6 max-w-7xl mx-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export const App: React.FC = () => {
+  const { setUser, setToken, setLoading } = useAuthStore();
+
+  useEffect(() => {
+    setLoading(true);
+
+    // Check initial auth state
+    getCurrentUser()
+      .then((user) => {
+        if (user) {
+          setUser({
+            id: user.id,
+            email: user.email || '',
+            role: 'admin',
+          });
+        }
+      })
+      .finally(() => setLoading(false));
+
+    // Listen for auth changes
+    const unsubscribe = onAuthStateChange((user) => {
+      if (user) {
+        setUser({
+          id: user.id,
+          email: user.email || '',
+          role: 'admin',
+        });
+      } else {
+        setUser(null);
+        setToken(null);
+      }
+    });
+
+    return () => unsubscribe?.data?.subscription?.unsubscribe();
+  }, [setUser, setToken, setLoading]);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        {/* Protected routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/volunteers"
+          element={
+            <ProtectedRoute>
+              <VolunteersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events"
+          element={
+            <ProtectedRoute>
+              <EventsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Placeholder routes for future implementation */}
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <div className="card p-12 text-center">
+                <p className="text-4xl mb-4">⚡</p>
+                <h3 className="text-xl font-bold text-white mb-2">Tasks - Coming Soon</h3>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <div className="card p-12 text-center">
+                <p className="text-4xl mb-4">💬</p>
+                <h3 className="text-xl font-bold text-white mb-2">Messages - Coming Soon</h3>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Not found */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
