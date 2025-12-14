@@ -1,12 +1,11 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from './store/authStore.js';
-import { getCurrentUser, onAuthStateChange, supabase } from './services/supabase.js';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Header } from './components/Header.js';
 import { Sidebar } from './components/Sidebar.js';
 
 // Pages
-import { LoginPage } from './pages/LoginPage.js';
+import LoginPage from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage.js';
 import { VolunteersPage } from './pages/VolunteersPage.js';
 import { NewVolunteerPage } from './pages/NewVolunteerPage.js';
@@ -25,7 +24,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -38,7 +37,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
@@ -56,135 +55,92 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 };
 
 export const App: React.FC = () => {
-  const { setUser, setToken, setLoading } = useAuthStore();
-
-  useEffect(() => {
-    setLoading(true);
-
-    // Check initial auth state
-    getCurrentUser()
-      .then(async (user) => {
-        if (user) {
-          // Get session to retrieve access token
-          const { data: { session } } = await supabase.auth.getSession();
-          setUser({
-            id: user.id,
-            email: user.email || '',
-            role: 'admin',
-          });
-          if (session?.access_token) {
-            setToken(session.access_token);
-          }
-        }
-      })
-      .finally(() => setLoading(false));
-
-    // Listen for auth changes
-    const unsubscribe = onAuthStateChange(async (user) => {
-      if (user) {
-        // Get session to retrieve access token
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser({
-          id: user.id,
-          email: user.email || '',
-          role: 'admin',
-        });
-        if (session?.access_token) {
-          setToken(session.access_token);
-        }
-      } else {
-        setUser(null);
-        setToken(null);
-      }
-    });
-
-    return () => unsubscribe?.data?.subscription?.unsubscribe();
-  }, [setUser, setToken, setLoading]);
-
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-        {/* Protected routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/volunteers"
-          element={
-            <ProtectedRoute>
-              <VolunteersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/volunteers/new"
-          element={
-            <ProtectedRoute>
-              <NewVolunteerPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/volunteers/:id/edit"
-          element={
-            <ProtectedRoute>
-              <EditVolunteerPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/events"
-          element={
-            <ProtectedRoute>
-              <EventsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/events/new"
-          element={
-            <ProtectedRoute>
-              <NewEventPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tasks"
-          element={
-            <ProtectedRoute>
-              <TasksPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/messages"
-          element={
-            <ProtectedRoute>
-              <MessagesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
+          {/* Protected routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/volunteers"
+            element={
+              <ProtectedRoute>
+                <VolunteersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/volunteers/new"
+            element={
+              <ProtectedRoute>
+                <NewVolunteerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/volunteers/:id/edit"
+            element={
+              <ProtectedRoute>
+                <EditVolunteerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events"
+            element={
+              <ProtectedRoute>
+                <EventsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events/new"
+            element={
+              <ProtectedRoute>
+                <NewEventPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tasks"
+            element={
+              <ProtectedRoute>
+                <TasksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <MessagesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Not found */}
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Not found */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 };

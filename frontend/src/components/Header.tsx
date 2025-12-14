@@ -1,17 +1,31 @@
 import React from 'react';
-import { useAuthStore } from '../store/authStore.js';
+import { useAuth } from '../context/AuthContext.js';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Menu } from 'lucide-react';
+import { signOut } from '../services/supabase.js';
+import { useAuthStore } from '../store/authStore.js';
 import logo from '../assets/logo.svg';
 
 export const Header: React.FC = () => {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuth();
+  const { logout } = useAuthStore();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = React.useState(false);
 
   const handleLogout = async () => {
-    logout();
-    navigate('/login');
+    try {
+      // Sign out from Supabase
+      await signOut();
+      // Clear the store
+      logout();
+      // Navigate to login
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+      // Still navigate even if signOut fails
+      logout();
+      navigate('/login');
+    }
   };
 
   return (
@@ -39,7 +53,7 @@ export const Header: React.FC = () => {
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="btn-secondary text-sm gap-2 flex items-center"
+                  className="px-3 py-1 bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 hover:text-white text-sm gap-2 flex items-center rounded-lg transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   Logout
@@ -66,7 +80,7 @@ export const Header: React.FC = () => {
               <p className="text-sm text-white font-medium">{user.email}</p>
               <button
                 onClick={handleLogout}
-                className="w-full btn-secondary text-sm gap-2 flex items-center justify-center"
+                className="w-full px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 hover:text-white text-sm gap-2 flex items-center justify-center rounded-lg transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 Logout

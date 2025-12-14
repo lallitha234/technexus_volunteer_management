@@ -1,77 +1,65 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore.js';
-import { signIn, getCurrentUser, supabase } from '../services/supabase.js';
-import { Mail, Lock, AlertCircle, Loader } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.js';
+import { signIn } from '../services/supabase.js';
+import { Mail, Lock, AlertCircle, Loader, Eye, EyeOff } from 'lucide-react';
 import logo from '../assets/logo.svg';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { setUser, setToken, setLoading, setError, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [localError, setLocalError] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
+  // Check if already authenticated
   useEffect(() => {
-    // Check if already logged in - but only redirect if we have a valid session with token
-    getCurrentUser().then(async (user) => {
-      if (user) {
-        // Also check if we have a valid session token
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          // User is properly authenticated, redirect to dashboard
-          navigate('/dashboard');
-        }
-        // Otherwise stay on login page
-      }
-    });
-  }, [navigate]);
+    if (isAuthenticated && !authLoading) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login form submitted', { email, hasPassword: !!password });
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:24',message:'Login attempt started',data:{hasEmail:!!email,emailLength:email.length,hasPassword:!!password},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H'})}).catch((err)=>console.error('Log fetch failed:',err));
-    // #endregion
-    setLocalError('');
-    setLoading(true);
+    setError('');
+    setIsLoading(true);
 
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:32',message:'Before signIn call',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H'})}).catch(()=>{});
-      // #endregion
-      const data = await signIn(email, password);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:35',message:'SignIn succeeded',data:{hasSession:!!data.session,hasUser:!!data.session?.user},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H'})}).catch(()=>{});
-      // #endregion
-
-      if (data.session?.user) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:42',message:'Setting user and token',data:{userId:data.session.user.id,hasToken:!!data.session.access_token,tokenLength:data.session.access_token?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'auth-fix',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-        setUser({
-          id: data.session.user.id,
-          email: data.session.user.email || '',
-          role: 'admin',
-        });
-        setToken(data.session.access_token);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:49',message:'Token set, navigating',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'auth-fix',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-
-        navigate('/dashboard');
+      // Validate inputs
+      if (!email.trim()) {
+        throw new Error('Email is required');
       }
-    } catch (err) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:48',message:'Login error',data:{errorMessage:err instanceof Error?err.message:String(err),errorType:err?.constructor?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H'})}).catch(()=>{});
-      // #endregion
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
-      setLocalError(errorMessage);
+      if (!password) {
+        throw new Error('Password is required');
+      }
+
+      // Sign in with Supabase
+      const data = await signIn(email.trim(), password);
+
+      if (data.session?.user && data.session?.access_token) {
+        // AuthContext will automatically update via onAuthStateChange listener
+        // Wait a moment for context to update, then navigate
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 100);
+      } else {
+        throw new Error('Login failed - no session created');
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
+      console.error('Login error:', err);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
+
+  // Don't show login page if already authenticated
+  if (isAuthenticated && !authLoading) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
@@ -82,94 +70,107 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Login card */}
-      <div className="relative w-full max-w-md">
-        <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-2xl shadow-2xl p-8">
-          {/* Header */}
+      <div className="relative z-10 w-full max-w-md">
+        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-2xl">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <img src={logo} alt="Technexus" className="h-12" />
+          </div>
+
+          {/* Title */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
-              <img src={logo} alt="Technexus" className="w-full h-full" />
-            </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Technexus</h1>
-            <p className="text-slate-400">Admin Volunteer Management</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+            <p className="text-slate-400">Sign in to your volunteer management account</p>
           </div>
 
           {/* Error message */}
-          {localError && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg flex gap-3">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <p className="text-red-200 text-sm">{localError}</p>
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <p className="text-red-200 text-sm">{error}</p>
             </div>
           )}
 
-          {/* Form */}
+          {/* Login form */}
           <form onSubmit={handleLogin} className="space-y-4">
-            {/* Email */}
+            {/* Email input */}
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-2">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-slate-200 mb-2">
+                Email Address
+              </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-500" />
                 <input
+                  id="email"
                   type="email"
-                  placeholder="admin@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-field pl-10"
-                  required
-                  disabled={isLoading}
+                  placeholder="admin@example.com"
+                  className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 text-white placeholder-slate-500 transition-colors"
+                  disabled={isLoading || authLoading}
                 />
               </div>
             </div>
 
-            {/* Password */}
+            {/* Password input */}
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-2">Password</label>
+              <label htmlFor="password" className="block text-sm font-medium text-slate-200 mb-2">
+                Password
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-500" />
                 <input
-                  type="password"
-                  placeholder="••••••••"
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field pl-10"
-                  required
-                  disabled={isLoading}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-10 py-2 bg-slate-800/50 border border-slate-600 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 text-white placeholder-slate-500 transition-colors"
+                  disabled={isLoading || authLoading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-400 transition-colors"
+                  disabled={isLoading || authLoading}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
-            {/* Submit */}
+            {/* Submit button */}
             <button
               type="submit"
-              onClick={(e) => {
-                console.log('Button clicked', { email, hasPassword: !!password, isLoading });
-                // Let the form onSubmit handle it, but log for debugging
-              }}
-              disabled={isLoading}
-              className="w-full btn-primary py-3 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading || authLoading}
+              className="w-full mt-6 py-2 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
                   <Loader className="w-4 h-4 animate-spin" />
-                  Logging in...
+                  Signing in...
                 </>
               ) : (
-                <>
-                  <span>🔑</span>
-                  Sign In as Admin
-                </>
+                'Sign In'
               )}
             </button>
           </form>
 
-          {/* Demo info */}
-          <div className="mt-8 p-4 bg-slate-700/30 rounded-lg border border-slate-600/50">
-            <p className="text-xs text-slate-400 mb-2">💡 Demo Credentials:</p>
-            <p className="text-xs text-slate-300 font-mono">
-              admin@example.com / password
+          {/* Footer */}
+          <div className="mt-6 pt-6 border-t border-slate-700/50">
+            <p className="text-center text-sm text-slate-400">
+              Demo credentials: Use any email and password (dev mode)
             </p>
           </div>
+        </div>
+
+        {/* Background decoration */}
+        <div className="mt-8 text-center text-slate-500 text-sm">
+          <p>Technexus Volunteer Management System</p>
         </div>
       </div>
     </div>
   );
 };
+
+export default LoginPage;
