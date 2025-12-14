@@ -11,6 +11,7 @@ export const VolunteersPage: React.FC = () => {
   const navigate = useNavigate();
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('active');
   const [page, setPage] = useState(1);
@@ -29,15 +30,21 @@ export const VolunteersPage: React.FC = () => {
 
   const fetchVolunteers = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const data = await volunteersApi.list({
         status,
         search: search || undefined,
       });
-      setVolunteers(data);
+      // Handle both array and wrapped response formats
+      const volunteersList = Array.isArray(data) ? data : (data?.data || []);
+      setVolunteers(volunteersList);
       setPage(1);
-    } catch (error) {
-      console.error('Failed to fetch volunteers:', error);
+    } catch (err) {
+      console.error('Failed to fetch volunteers:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load volunteers. Please try again.';
+      setError(errorMessage);
+      setVolunteers([]);
     } finally {
       setIsLoading(false);
     }
@@ -133,6 +140,21 @@ export const VolunteersPage: React.FC = () => {
           </select>
         </div>
       </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="card p-4 bg-red-500/10 border border-red-500/30">
+          <div className="flex items-center justify-between">
+            <p className="text-red-200">{error}</p>
+            <button
+              onClick={fetchVolunteers}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Volunteers grid */}
       {isLoading ? (

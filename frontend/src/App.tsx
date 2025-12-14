@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore.js';
-import { getCurrentUser, onAuthStateChange } from './services/supabase.js';
+import { getCurrentUser, onAuthStateChange, supabase } from './services/supabase.js';
 import { Header } from './components/Header.js';
 import { Sidebar } from './components/Sidebar.js';
 
@@ -63,25 +63,35 @@ export const App: React.FC = () => {
 
     // Check initial auth state
     getCurrentUser()
-      .then((user) => {
+      .then(async (user) => {
         if (user) {
+          // Get session to retrieve access token
+          const { data: { session } } = await supabase.auth.getSession();
           setUser({
             id: user.id,
             email: user.email || '',
             role: 'admin',
           });
+          if (session?.access_token) {
+            setToken(session.access_token);
+          }
         }
       })
       .finally(() => setLoading(false));
 
     // Listen for auth changes
-    const unsubscribe = onAuthStateChange((user) => {
+    const unsubscribe = onAuthStateChange(async (user) => {
       if (user) {
+        // Get session to retrieve access token
+        const { data: { session } } = await supabase.auth.getSession();
         setUser({
           id: user.id,
           email: user.email || '',
           role: 'admin',
         });
+        if (session?.access_token) {
+          setToken(session.access_token);
+        }
       } else {
         setUser(null);
         setToken(null);

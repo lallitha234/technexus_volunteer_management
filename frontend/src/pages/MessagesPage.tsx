@@ -50,9 +50,9 @@ export const MessagesPage: React.FC = () => {
     setIsSending(true);
     try {
       await messagesApi.broadcast({
-        title: 'Broadcast Message',
-        body: messageText,
-        sent_to_all: true,
+        subject: 'Broadcast Message',
+        content: messageText,
+        filter: {},
       });
       setMessageText('');
       fetchMessages();

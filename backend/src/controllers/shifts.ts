@@ -64,11 +64,12 @@ export const getEventShifts = async (req: Request, res: Response): Promise<void>
 };
 
 /**
- * POST /shifts/:id/assign - Assign volunteer to shift
+ * POST /events/shifts/:shiftId/assign - Assign volunteer to shift
  */
 export const assignVolunteerToShift = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { shiftId } = req.params;
+    const id = shiftId; // Use shiftId for consistency
     const { volunteer_id, as_waitlist = false } = req.body;
     const supabase = getSupabase();
 
@@ -121,11 +122,12 @@ export const assignVolunteerToShift = async (req: Request, res: Response): Promi
 };
 
 /**
- * DELETE /shifts/:id/assign/:volunteerId - Unassign volunteer from shift
+ * DELETE /events/shifts/:shiftId/assign/:volunteerId - Unassign volunteer from shift
  */
 export const unassignVolunteerFromShift = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id, volunteerId } = req.params;
+    const { shiftId, volunteerId } = req.params;
+    const id = shiftId; // Use shiftId for consistency
     const supabase = getSupabase();
 
     const { data: assignment, error: assignError } = await supabase

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
-import { signIn, getCurrentUser } from '../services/supabase.js';
+import { signIn, getCurrentUser, supabase } from '../services/supabase.js';
 import { Mail, Lock, AlertCircle, Loader } from 'lucide-react';
 import logo from '../assets/logo.svg';
 
@@ -13,33 +13,58 @@ export const LoginPage: React.FC = () => {
   const [localError, setLocalError] = useState('');
 
   useEffect(() => {
-    // Check if already logged in
-    getCurrentUser().then((user) => {
+    // Check if already logged in - but only redirect if we have a valid session with token
+    getCurrentUser().then(async (user) => {
       if (user) {
-        navigate('/dashboard');
+        // Also check if we have a valid session token
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          // User is properly authenticated, redirect to dashboard
+          navigate('/dashboard');
+        }
+        // Otherwise stay on login page
       }
     });
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login form submitted', { email, hasPassword: !!password });
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:24',message:'Login attempt started',data:{hasEmail:!!email,emailLength:email.length,hasPassword:!!password},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H'})}).catch((err)=>console.error('Log fetch failed:',err));
+    // #endregion
     setLocalError('');
     setLoading(true);
 
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:32',message:'Before signIn call',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H'})}).catch(()=>{});
+      // #endregion
       const data = await signIn(email, password);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:35',message:'SignIn succeeded',data:{hasSession:!!data.session,hasUser:!!data.session?.user},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H'})}).catch(()=>{});
+      // #endregion
 
       if (data.session?.user) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:42',message:'Setting user and token',data:{userId:data.session.user.id,hasToken:!!data.session.access_token,tokenLength:data.session.access_token?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'auth-fix',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         setUser({
           id: data.session.user.id,
           email: data.session.user.email || '',
           role: 'admin',
         });
         setToken(data.session.access_token);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:49',message:'Token set, navigating',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'auth-fix',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
 
         navigate('/dashboard');
       }
     } catch (err) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/427d9eb7-fa35-4a6d-a3f6-c3b69ecd1468',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LoginPage.tsx:48',message:'Login error',data:{errorMessage:err instanceof Error?err.message:String(err),errorType:err?.constructor?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H'})}).catch(()=>{});
+      // #endregion
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setLocalError(errorMessage);
       setError(errorMessage);
@@ -115,6 +140,10 @@ export const LoginPage: React.FC = () => {
             {/* Submit */}
             <button
               type="submit"
+              onClick={(e) => {
+                console.log('Button clicked', { email, hasPassword: !!password, isLoading });
+                // Let the form onSubmit handle it, but log for debugging
+              }}
               disabled={isLoading}
               className="w-full btn-primary py-3 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >

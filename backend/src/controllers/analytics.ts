@@ -12,8 +12,7 @@ export const getAnalyticsSummary = async (req: Request, res: Response): Promise<
     const { count: totalVolunteersCount } = await supabase
       .from('volunteers')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'active')
-      .then(res => ({ count: res.count || 0 }));
+      .eq('status', 'active');
 
     // Active volunteers (last 30 days)
     const thirtyDaysAgo = new Date();
@@ -23,8 +22,7 @@ export const getAnalyticsSummary = async (req: Request, res: Response): Promise<
       .from('volunteers')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'active')
-      .gte('last_active_at', thirtyDaysAgo.toISOString())
-      .then(res => ({ count: res.count || 0 }));
+      .gte('last_active_at', thirtyDaysAgo.toISOString());
 
     // Upcoming events (next 30 days)
     const now = new Date();
@@ -36,8 +34,7 @@ export const getAnalyticsSummary = async (req: Request, res: Response): Promise<
       .select('*', { count: 'exact', head: true })
       .eq('status', 'published')
       .gte('start_at', now.toISOString())
-      .lte('start_at', thirtyDaysFromNow.toISOString())
-      .then(res => ({ count: res.count || 0 }));
+      .lte('start_at', thirtyDaysFromNow.toISOString());
 
     // Total hours
     const { data: allVolunteers } = await supabase
@@ -80,10 +77,10 @@ export const getAnalyticsSummary = async (req: Request, res: Response): Promise<
     const noShowRate = totalAssignments > 0 ? (noShowCount / totalAssignments) * 100 : 0;
 
     res.json({
-      total_volunteers: totalVolunteersCount,
-      active_volunteers: activeVolunteersCount,
-      upcoming_events: upcomingEventsCount,
-      total_hours_contributed: totalHours,
+      total_volunteers: totalVolunteersCount || 0,
+      active_volunteers: activeVolunteersCount || 0,
+      upcoming_events: upcomingEventsCount || 0,
+      total_hours_contributed: totalHours || 0,
       event_fill_rate: Math.round(fillRate * 100) / 100,
       no_show_rate: Math.round(noShowRate * 100) / 100,
     });

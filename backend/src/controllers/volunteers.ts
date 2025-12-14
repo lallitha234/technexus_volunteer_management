@@ -10,34 +10,48 @@ import { randomUUID } from 'crypto';
 export const listVolunteers = async (req: Request, res: Response): Promise<void> => {
   try {
     const supabase = getSupabase();
-    const { status = 'active', search = '', skills = '', availability = '' } = req.query;
+    const { status, search, skills, availability } = req.query;
 
     let query = supabase.from('volunteers').select('*');
 
-    if (status) query = query.eq('status', status);
-    if (search) query = query.ilike('full_name', `%${search}%`);
+    // Apply filters
+    if (status && typeof status === 'string') {
+      query = query.eq('status', status);
+    }
+    
+    // Search by name or email
+    if (search && typeof search === 'string' && search.trim()) {
+      query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
+    }
 
     const { data, error } = await query;
 
     if (error) throw error;
 
-    // Filter by skills/availability if provided
-    let volunteers = data as Volunteer[];
-    if (skills) {
-      const skillArray = (skills as string).split(',');
-      volunteers = volunteers.filter((v) =>
-        skillArray.some((skill) => v.skills.includes(skill.trim()))
-      );
+    // Filter by skills/availability if provided (client-side filtering for array fields)
+    let volunteers = (data || []) as Volunteer[];
+    
+    if (skills && typeof skills === 'string' && skills.trim()) {
+      const skillArray = skills.split(',').map(s => s.trim()).filter(Boolean);
+      if (skillArray.length > 0) {
+        volunteers = volunteers.filter((v) =>
+          v.skills && skillArray.some((skill) => v.skills.includes(skill))
+        );
+      }
     }
-    if (availability) {
-      const availArray = (availability as string).split(',');
-      volunteers = volunteers.filter((v) =>
-        availArray.some((avail) => v.availability_weekdays.includes(avail.trim()))
-      );
+    
+    if (availability && typeof availability === 'string' && availability.trim()) {
+      const availArray = availability.split(',').map(a => a.trim()).filter(Boolean);
+      if (availArray.length > 0) {
+        volunteers = volunteers.filter((v) =>
+          v.availability_weekdays && availArray.some((avail) => v.availability_weekdays.includes(avail))
+        );
+      }
     }
 
     res.json(volunteers);
   } catch (error) {
+    console.error('List volunteers error:', error);
     res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };

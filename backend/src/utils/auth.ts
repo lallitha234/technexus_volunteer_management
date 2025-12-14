@@ -14,16 +14,38 @@ export const verifySupabaseToken = (token: string): AuthUser => {
     if (!jwtSecret) {
       console.warn('⚠️  SUPABASE_JWT_SECRET not set - attempting token extraction without verification');
       try {
-        const decoded = jwt.decode(token) as AuthUser & { role: string; sub: string };
+        const decoded = jwt.decode(token) as any;
+        console.log('[AUTH] Decoded token keys:', decoded ? Object.keys(decoded) : 'null');
+        console.log('[AUTH] Decoded token sample:', decoded ? {
+          sub: decoded.sub,
+          email: decoded.email,
+          user_role: decoded.user_role,
+          app_metadata: decoded.app_metadata,
+          user_metadata: decoded.user_metadata,
+        } : 'null');
+        
         if (decoded) {
-          return {
+          // In development, treat all authenticated users as admin
+          // Check user_metadata or app_metadata for role, default to admin
+          const userRole = decoded.user_role || 
+                          decoded.app_metadata?.role || 
+                          decoded.user_metadata?.role || 
+                          'admin';
+          
+          console.log('[AUTH] Extracted role:', userRole, '-> assigning as admin');
+          
+          const authUser = {
             id: decoded.sub || decoded.id,
             email: decoded.email || '',
-            role: (decoded.role as 'admin' | 'volunteer') || 'volunteer',
-            aud: decoded.aud,
+            role: 'admin' as const, // Force admin role in dev mode
+            aud: decoded.aud || 'authenticated',
           };
+          
+          console.log('[AUTH] Returning user:', authUser);
+          return authUser;
         }
       } catch (e) {
+        console.error('Token decode error:', e);
         // Fall through to error
       }
       throw new Error('SUPABASE_JWT_SECRET not configured and token could not be decoded');
