@@ -18,7 +18,7 @@ export interface Volunteer {
   total_events: number;
   no_show_count: number;
   last_active_at?: string;
-  status: 'active' | 'inactive' | 'archived';
+  status: 'active' | 'inactive' | 'blocked';
   created_at: string;
   updated_at: string;
 }

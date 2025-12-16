@@ -12,6 +12,7 @@ import volunteersRoutes from './routes/volunteers.js';
 import eventsRoutes from './routes/events.js';
 import tasksRoutes from './routes/tasks.js';
 import messagesRoutes from './routes/messages.js';
+import badgesRoutes from './routes/badges.js';
 import analyticsRoutes from './routes/analytics.js';
 import exportRoutes from './routes/export.js';
 
@@ -60,6 +61,7 @@ app.use('/api/volunteers', volunteersRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/messages', messagesRoutes);
+app.use('/api/badges', badgesRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/export', exportRoutes);
 

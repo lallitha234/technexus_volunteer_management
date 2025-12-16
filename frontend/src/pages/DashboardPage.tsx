@@ -4,12 +4,15 @@ import { analyticsApi } from '../services/api.js';
 import { AnalyticsSummary } from '../types/index.js';
 import { RefreshCw, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useRefresh } from '../context/RefreshContext.js';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { refreshDashboard } = useRefresh();
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshCount, setRefreshCount] = useState(0);
 
   const fetchAnalytics = async () => {
     setIsLoading(true);
@@ -30,6 +33,17 @@ export const DashboardPage: React.FC = () => {
     fetchAnalytics();
     const interval = setInterval(fetchAnalytics, 30000); // Refresh every 30s
     return () => clearInterval(interval);
+  }, []);
+
+  // Listen for refresh triggers
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchAnalytics();
+    };
+    
+    // Create a custom event listener
+    window.addEventListener('dashboardRefresh', handleRefresh);
+    return () => window.removeEventListener('dashboardRefresh', handleRefresh);
   }, []);
 
   return (

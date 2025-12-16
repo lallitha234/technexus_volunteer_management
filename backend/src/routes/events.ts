@@ -22,6 +22,7 @@ router.patch('/:id', eventsController.updateEvent);
 router.post('/:id/publish', eventsController.publishEvent);
 router.post('/:id/complete', eventsController.completeEvent);
 router.post('/:id/cancel', eventsController.cancelEvent);
+router.post('/:id/revert-to-draft', eventsController.revertToDraft);
 router.delete('/:id', eventsController.deleteEvent);
 
 export default router;

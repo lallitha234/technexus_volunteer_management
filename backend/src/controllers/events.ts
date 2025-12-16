@@ -10,10 +10,19 @@ import { randomUUID } from 'crypto';
 export const createEvent = async (req: Request, res: Response): Promise<void> => {
   try {
     const supabase = getSupabase();
-    const { title, description, location_address, start_at, end_at, tags = [] } = req.body;
+    const { title, description, location_address, location_lat, location_lng, start_at, end_at, tags = [], estimated_volunteers, status = 'draft' } = req.body;
 
     if (!title || !start_at || !end_at) {
       res.status(400).json({ error: 'Missing required fields: title, start_at, end_at' });
+      return;
+    }
+
+    // Ensure dates are properly parsed
+    const startDate = new Date(start_at);
+    const endDate = new Date(end_at);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      res.status(400).json({ error: 'Invalid date format for start_at or end_at' });
       return;
     }
 
@@ -22,10 +31,13 @@ export const createEvent = async (req: Request, res: Response): Promise<void> =>
       title,
       description: description || '',
       location_address: location_address || '',
+      location_lat: location_lat || undefined,
+      location_lng: location_lng || undefined,
       tags: tags || [],
-      start_at: new Date(start_at),
-      end_at: new Date(end_at),
-      status: 'draft',
+      start_at: startDate,
+      end_at: endDate,
+      status: status || 'draft',
+      estimated_volunteers: estimated_volunteers || undefined,
       created_at: new Date(),
       updated_at: new Date(),
       created_by: req.user?.id || '',
@@ -104,16 +116,35 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
     const { id } = req.params;
     const supabase = getSupabase();
 
-    const { data: oldData } = await supabase
+    console.log('[updateEvent] Request received:', {
+      id,
+      body: req.body,
+      userEmail: req.user?.email,
+      userRole: req.user?.role,
+    });
+
+    const { data: oldData, error: fetchError } = await supabase
       .from('events')
       .select('*')
       .eq('id', id)
       .single();
 
+    if (fetchError) {
+      console.error('[updateEvent] Error fetching old data:', fetchError);
+      throw fetchError;
+    }
+
+    console.log('[updateEvent] Found existing event:', {
+      id,
+      title: oldData?.title,
+    });
+
     const updateData = {
       ...req.body,
       updated_at: new Date(),
     };
+
+    console.log('[updateEvent] Updating with data:', updateData);
 
     const { data, error } = await supabase
       .from('events')
@@ -122,7 +153,16 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
       .select()
       .single();
 
-    if (error) throw error;
+    console.log('[updateEvent] Update result:', {
+      success: !error,
+      error: error?.message,
+      dataReturned: !!data,
+    });
+
+    if (error) {
+      console.error('[updateEvent] Supabase error:', error);
+      throw error;
+    }
 
     if (req.user) {
       await logAudit(req.user.id, 'UPDATE', 'events', id, oldData, updateData, req.ip);
@@ -130,6 +170,7 @@ export const updateEvent = async (req: Request, res: Response): Promise<void> =>
 
     res.json(data);
   } catch (error) {
+    console.error('[updateEvent] Exception:', error instanceof Error ? error.message : error);
     res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
@@ -218,6 +259,36 @@ export const completeEvent = async (req: Request, res: Response): Promise<void> 
 
     if (req.user) {
       await logAudit(req.user.id, 'COMPLETE_EVENT', 'events', id, {}, { status: 'completed' }, req.ip);
+    }
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+/**
+ * POST /events/:id/revert-to-draft - Revert event to draft status
+ */
+export const revertToDraft = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const supabase = getSupabase();
+
+    const { data, error } = await supabase
+      .from('events')
+      .update({
+        status: 'draft',
+        updated_at: new Date(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (req.user) {
+      await logAudit(req.user.id, 'REVERT_TO_DRAFT', 'events', id, {}, { status: 'draft' }, req.ip);
     }
 
     res.json(data);

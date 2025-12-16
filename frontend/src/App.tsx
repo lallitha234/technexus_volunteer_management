@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { RefreshProvider } from './context/RefreshContext';
 import { Header } from './components/Header.js';
 import { Sidebar } from './components/Sidebar.js';
 
@@ -10,8 +11,12 @@ import { DashboardPage } from './pages/DashboardPage.js';
 import { VolunteersPage } from './pages/VolunteersPage.js';
 import { NewVolunteerPage } from './pages/NewVolunteerPage.js';
 import { EditVolunteerPage } from './pages/EditVolunteerPage.js';
+import { BadgeAssignmentPage } from './pages/BadgeAssignmentPage.js';
 import { EventsPage } from './pages/EventsPage.js';
 import { NewEventPage } from './pages/NewEventPage.js';
+import { EditEventPage } from './pages/EditEventPage.js';
+import { EventDetailPage } from './pages/EventDetailPage.js';
+import { ShiftsManagementPage } from './pages/ShiftsManagementPage.js';
 import { TasksPage } from './pages/TasksPage.js';
 import { MessagesPage } from './pages/MessagesPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
@@ -57,7 +62,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <RefreshProvider>
+        <BrowserRouter>
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
@@ -89,6 +95,14 @@ export const App: React.FC = () => {
             }
           />
           <Route
+            path="/volunteers/:id/badge"
+            element={
+              <ProtectedRoute>
+                <BadgeAssignmentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/volunteers/:id/edit"
             element={
               <ProtectedRoute>
@@ -109,6 +123,30 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <NewEventPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events/:id/edit"
+            element={
+              <ProtectedRoute>
+                <EditEventPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events/:id"
+            element={
+              <ProtectedRoute>
+                <EventDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/events/:id/shifts"
+            element={
+              <ProtectedRoute>
+                <ShiftsManagementPage />
               </ProtectedRoute>
             }
           />
@@ -141,6 +179,7 @@ export const App: React.FC = () => {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
+      </RefreshProvider>
     </AuthProvider>
   );
 };

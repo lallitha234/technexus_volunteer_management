@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { eventsApi } from '../services/api.js';
-import { Event } from '../types/index.js';
+import type { Event } from '../types/index.js';
 import { Calendar, MapPin, Users, Plus, Edit2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useRefresh } from '../context/RefreshContext.js';
+import { formatDateIST } from '../utils/timeUtils.js';
 
 export const EventsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { refreshDashboard } = useRefresh();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [status, setStatus] = useState('published');
@@ -26,10 +29,15 @@ export const EventsPage: React.FC = () => {
     }
   };
 
+  const triggerDashboardRefresh = () => {
+    window.dispatchEvent(new Event('dashboardRefresh'));
+  };
+
   const handlePublish = async (id: string) => {
     try {
       await eventsApi.publish(id);
       fetchEvents();
+      triggerDashboardRefresh();
     } catch (error) {
       console.error('Failed to publish event:', error);
     }
@@ -40,8 +48,31 @@ export const EventsPage: React.FC = () => {
     try {
       await eventsApi.cancel(id);
       fetchEvents();
+      triggerDashboardRefresh();
     } catch (error) {
       console.error('Failed to cancel event:', error);
+    }
+  };
+
+  const handleRevertToDraft = async (id: string) => {
+    if (!confirm('Revert event to draft status? This will unpublish the event.')) return;
+    try {
+      await eventsApi.revertToDraft(id);
+      fetchEvents();
+      triggerDashboardRefresh();
+    } catch (error) {
+      console.error('Failed to revert event to draft:', error);
+    }
+  };
+
+  const handleCompleteEvent = async (id: string) => {
+    if (!confirm('Mark this event as completed?')) return;
+    try {
+      await eventsApi.complete(id);
+      fetchEvents();
+      triggerDashboardRefresh();
+    } catch (error) {
+      console.error('Failed to complete event:', error);
     }
   };
 
@@ -50,18 +81,14 @@ export const EventsPage: React.FC = () => {
     try {
       await eventsApi.delete(id);
       fetchEvents();
+      triggerDashboardRefresh();
     } catch (error) {
       console.error('Failed to delete event:', error);
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateIST(dateString);
   };
 
   return (
@@ -185,9 +212,55 @@ export const EventsPage: React.FC = () => {
                       >
                         Manage Shifts
                       </button>
+                      <button
+                        onClick={() => handleCompleteEvent(event.id)}
+                        className="px-3 py-2 bg-green-500/20 text-green-200 hover:bg-green-500/30 rounded text-xs sm:text-sm"
+                      >
+                        Mark Complete
+                      </button>
+                      <button
+                        onClick={() => handleRevertToDraft(event.id)}
+                        className="px-3 py-2 bg-yellow-500/20 text-yellow-200 hover:bg-yellow-500/30 rounded text-xs sm:text-sm"
+                      >
+                        Revert to Draft
+                      </button>
                     </>
                   )}
-                  {event.status !== 'published' && event.status !== 'draft' && (
+                  {event.status === 'cancelled' && (
+                    <>
+                      <button
+                        onClick={() => handleRevertToDraft(event.id)}
+                        className="px-3 py-2 bg-yellow-500/20 text-yellow-200 hover:bg-yellow-500/30 rounded text-xs sm:text-sm"
+                      >
+                        Revert to Draft
+                      </button>
+                      <button
+                        onClick={() => handleDelete(event.id)}
+                        className="px-3 py-2 bg-red-500/20 text-red-200 hover:bg-red-500/30 rounded text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </>
+                  )}
+                  {event.status === 'completed' && (
+                    <>
+                      <button
+                        onClick={() => handleRevertToDraft(event.id)}
+                        className="px-3 py-2 bg-yellow-500/20 text-yellow-200 hover:bg-yellow-500/30 rounded text-xs sm:text-sm"
+                      >
+                        Revert to Draft
+                      </button>
+                      <button
+                        onClick={() => handleDelete(event.id)}
+                        className="px-3 py-2 bg-red-500/20 text-red-200 hover:bg-red-500/30 rounded text-xs sm:text-sm flex items-center gap-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </>
+                  )}
+                  {event.status !== 'published' && event.status !== 'draft' && event.status !== 'cancelled' && event.status !== 'completed' && (
                     <button
                       onClick={() => handleDelete(event.id)}
                       className="px-3 py-2 bg-red-500/20 text-red-200 hover:bg-red-500/30 rounded text-xs sm:text-sm flex items-center gap-1"
@@ -213,7 +286,7 @@ export const EventsPage: React.FC = () => {
           <h3 className="text-xl font-bold text-white mb-2">No events found</h3>
           <p className="text-slate-400 mb-6">
             {status === 'draft'
-              ? 'Create your first event to get started'
+              ? ''
               : 'No events with this status'}
           </p>
         </div>

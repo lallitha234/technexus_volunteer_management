@@ -42,7 +42,7 @@ export const VolunteerCard: React.FC<VolunteerCardProps> = ({
 
         {/* Status badge */}
         <div className="badge whitespace-nowrap">
-          {volunteer.status === 'active' ? '🟢 Active' : '🔵 ' + volunteer.status}
+          {volunteer.status === 'active' ? '🟢 Active' : volunteer.status === 'inactive' ? '🔵 Inactive' : '🚫 Blocked'}
         </div>
       </div>
 

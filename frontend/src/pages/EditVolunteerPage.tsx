@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { volunteersApi } from '../services/api.js';
 import { Volunteer } from '../types/index.js';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { useRefresh } from '../context/RefreshContext.js';
 
 const SKILLS_OPTIONS = [
   'Event Planning',
@@ -53,9 +54,23 @@ const AVAILABILITY_TIME_SLOTS = [
   'Late Evening (6pm-9pm)',
 ];
 
+const PRONOUNS_OPTIONS = [
+  'He/Him',
+  'She/Her',
+  'They/Them',
+  'Prefer not to say',
+];
+
+const VOLUNTEER_STATUSES = [
+  { label: '🟢 Active', value: 'active' },
+  { label: '🔵 Inactive', value: 'inactive' },
+  { label: '� Blocked', value: 'blocked' },
+];
+
 export const EditVolunteerPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { refreshDashboard } = useRefresh();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
@@ -67,6 +82,7 @@ export const EditVolunteerPage: React.FC = () => {
     email: '',
     phone: '',
     bio: '',
+    status: 'active',
     skills: [],
     interests: [],
     availability_weekdays: [],
@@ -159,6 +175,7 @@ export const EditVolunteerPage: React.FC = () => {
     setIsSaving(true);
     try {
       await volunteersApi.update(id!, formData);
+      window.dispatchEvent(new Event('dashboardRefresh'));
       navigate('/volunteers');
     } catch (err: any) {
       console.error('Failed to update volunteer:', err);
@@ -243,13 +260,24 @@ export const EditVolunteerPage: React.FC = () => {
               <label className="block text-sm font-medium text-slate-200 mb-2">
                 Pronouns
               </label>
-              <input
-                type="text"
+              <select
                 name="pronouns"
                 value={formData.pronouns || ''}
-                onChange={handleInputChange}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    pronouns: e.target.value,
+                  }))
+                }
                 className="input-field"
-              />
+              >
+                <option value="">Select pronouns...</option>
+                {PRONOUNS_OPTIONS.map((pronoun) => (
+                  <option key={pronoun} value={pronoun}>
+                    {pronoun}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-2">
@@ -289,6 +317,45 @@ export const EditVolunteerPage: React.FC = () => {
               rows={3}
               className="input-field resize-none"
             />
+          </div>
+        </div>
+
+        {/* Admin Settings */}
+        <div className="card p-6 space-y-4 border border-purple-500/30 bg-purple-500/5">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <span>🛡️</span> Admin Settings
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-200 mb-2">
+                Activity Status
+              </label>
+              <select
+                name="status"
+                value={formData.status || 'active'}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    status: e.target.value as 'active' | 'inactive' | 'blocked',
+                  }))
+                }
+                className="input-field"
+              >
+                {VOLUNTEER_STATUSES.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-400 mt-2">
+                🟢 Active - Volunteer is available for tasks
+                <br />
+                🔵 Inactive - Temporarily unavailable
+                <br />
+                � Blocked - No longer volunteering
+              </p>
+            </div>
           </div>
         </div>
 

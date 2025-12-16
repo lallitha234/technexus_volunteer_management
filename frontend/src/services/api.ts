@@ -135,6 +135,7 @@ export const eventsApi = {
   publish: (id: string) => apiCall('POST', `/events/${id}/publish`),
   complete: (id: string) => apiCall('POST', `/events/${id}/complete`),
   cancel: (id: string) => apiCall('POST', `/events/${id}/cancel`),
+  revertToDraft: (id: string) => apiCall('POST', `/events/${id}/revert-to-draft`),
   delete: (id: string) => apiCall('DELETE', `/events/${id}`),
   getShifts: (eventId: string) => apiCall('GET', `/events/${eventId}/shifts`),
   createShift: (data: any) => apiCall('POST', '/events/create-shift', { data }),
@@ -165,6 +166,11 @@ export const messagesApi = {
   send: (data: any) => apiCall('POST', '/messages/send', { data }),
   getVolunteerMessages: (volunteerId: string) =>
     apiCall('GET', `/messages/volunteer/${volunteerId}`),
+};
+
+// Badge endpoints
+export const badgesApi = {
+  list: () => apiCall('GET', '/badges'),
 };
 
 // Analytics endpoints

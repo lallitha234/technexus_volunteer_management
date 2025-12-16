@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { volunteersApi } from '../services/api.js';
 import { ArrowLeft, AlertCircle, Check } from 'lucide-react';
+import { useRefresh } from '../context/RefreshContext.js';
 
 const SKILLS_OPTIONS = [
   'Event Planning',
@@ -52,10 +53,15 @@ const AVAILABILITY_TIME_SLOTS = [
   'Late Evening (6pm-9pm)',
 ];
 
+const PRONOUNS_OPTIONS = [
+  'He/Him',
+  'She/Her',  'They/Them',
+  'Prefer not to say',];
+
 const VOLUNTEER_STATUSES = [
   { label: '🟢 Active', value: 'active' },
   { label: '🔵 Inactive', value: 'inactive' },
-  { label: '🔴 Archived', value: 'archived' },
+  { label: '� Blocked', value: 'blocked' },
 ];
 
 interface FormData {
@@ -66,7 +72,7 @@ interface FormData {
   phone: string;
   bio: string;
   admin_notes: string;
-  status: 'active' | 'inactive' | 'archived';
+  status: 'active' | 'inactive' | 'blocked';
   skills: string[];
   interests: string[];
   availability_weekdays: string[];
@@ -77,6 +83,7 @@ interface FormData {
 
 export const NewVolunteerPage: React.FC = () => {
   const navigate = useNavigate();
+  const { refreshDashboard } = useRefresh();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -182,6 +189,7 @@ export const NewVolunteerPage: React.FC = () => {
 
       await volunteersApi.create(payload);
       setSuccess(true);
+      window.dispatchEvent(new Event('dashboardRefresh'));
       setTimeout(() => {
         navigate('/volunteers');
       }, 1500);
@@ -258,14 +266,24 @@ export const NewVolunteerPage: React.FC = () => {
               <label className="block text-sm font-medium text-slate-200 mb-2">
                 Pronouns
               </label>
-              <input
-                type="text"
+              <select
                 name="pronouns"
                 value={formData.pronouns}
-                onChange={handleInputChange}
-                placeholder="He/Him"
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    pronouns: e.target.value,
+                  }))
+                }
                 className="input-field"
-              />
+              >
+                <option value="">Select pronouns...</option>
+                {PRONOUNS_OPTIONS.map((pronoun) => (
+                  <option key={pronoun} value={pronoun}>
+                    {pronoun}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-2">
@@ -328,7 +346,7 @@ export const NewVolunteerPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    status: e.target.value as 'active' | 'inactive' | 'archived',
+                    status: e.target.value as 'active' | 'inactive' | 'blocked',
                   }))
                 }
                 className="input-field"

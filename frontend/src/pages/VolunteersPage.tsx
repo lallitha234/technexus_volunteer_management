@@ -6,9 +6,11 @@ import { Pagination } from '../components/Pagination.js';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal.js';
 import { Search, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useRefresh } from '../context/RefreshContext.js';
 
 export const VolunteersPage: React.FC = () => {
   const navigate = useNavigate();
+  const { refreshDashboard } = useRefresh();
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +71,7 @@ export const VolunteersPage: React.FC = () => {
       await volunteersApi.delete(deleteModal.volunteerId);
       setVolunteers(volunteers.filter((v) => v.id !== deleteModal.volunteerId));
       setDeleteModal({ isOpen: false, volunteerId: '', volunteerName: '', isDeleting: false });
+      window.dispatchEvent(new Event('dashboardRefresh'));
     } catch (error) {
       console.error('Failed to delete volunteer:', error);
       setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
@@ -136,7 +139,7 @@ export const VolunteersPage: React.FC = () => {
           >
             <option value="active">🟢 Active</option>
             <option value="inactive">🔵 Inactive</option>
-            <option value="archived">🔴 Archived</option>
+            <option value="blocked">🚫 Blocked</option>
           </select>
         </div>
       </div>
@@ -188,7 +191,7 @@ export const VolunteersPage: React.FC = () => {
           <p className="text-4xl mb-4">👥</p>
           <h3 className="text-xl font-bold text-white mb-2">No volunteers found</h3>
           <p className="text-slate-400">
-            {search ? 'Try adjusting your search' : 'Add your first volunteer to get started'}
+            {search ? 'Try adjusting your search' : ''}
           </p>
         </div>
       )}

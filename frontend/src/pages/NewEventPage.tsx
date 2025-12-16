@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { eventsApi } from '../services/api.js';
 import { ArrowLeft, AlertCircle, MapPin } from 'lucide-react';
+import { useRefresh } from '../context/RefreshContext.js';
+import { datetimeLocalToUTCISO } from '../utils/timeUtils.js';
 
 interface FormData {
   title: string;
@@ -28,6 +30,7 @@ const COMMON_TAGS = [
 
 export const NewEventPage: React.FC = () => {
   const navigate = useNavigate();
+  const { refreshDashboard } = useRefresh();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -97,18 +100,20 @@ export const NewEventPage: React.FC = () => {
         location_lat: formData.location_lat,
         location_lng: formData.location_lng,
         tags: formData.tags,
-        start_at: formData.start_at,
-        end_at: formData.end_at,
+        start_at: datetimeLocalToUTCISO(formData.start_at),
+        end_at: datetimeLocalToUTCISO(formData.end_at),
         estimated_volunteers: formData.estimated_volunteers,
         status: 'draft',
       };
 
       await eventsApi.create(payload);
+      window.dispatchEvent(new Event('dashboardRefresh'));
       navigate('/events');
     } catch (err: any) {
       console.error('Failed to create event:', err);
       setError(
         err?.response?.data?.message ||
+          err?.message ||
           'Failed to create event. Please try again.'
       );
     } finally {
